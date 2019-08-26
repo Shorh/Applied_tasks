@@ -172,6 +172,7 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+
 # Editor-based Rest Client
 .idea/httpRequests
 
@@ -207,6 +208,5 @@ Temporary Items
 .apdisk
 
 # Others
-Материалы/
-Сдача ДЗ/
+Итого/
 .vscode/
