@@ -17,6 +17,14 @@ TODAY = pd.Timestamp(year=today.year, month=today.month, day=today.day)
 MONTH = (TODAY - pd.Timedelta(days=3)).month
 YEAR = (TODAY - pd.Timedelta(days=3)).year
 
+MONTHS = ['', 'ЯНВАРЬ', 'ФЕВРАЛЬ', 'МАРТ',
+          'АПРЕЛЬ', 'МАЙ', 'ИЮНЬ',
+          'ИЮЛЬ', 'АВГУСТ', 'СЕНТЯБРЬ',
+          'ОКТЯБРЬ', 'НОЯБРЬ', 'ДЕКАБРЬ',]
+
+START_LAST_WEEK = TODAY + pd.Timedelta(days=-TODAY.weekday(), weeks=-1)
+END_LAST_WEEK = START_LAST_WEEK + pd.Timedelta(days=6)
+
 THIN = Side(border_style="thin", color="000000")
 BORDER = Border(top=THIN, left=THIN, right=THIN, bottom=THIN)
 
@@ -115,7 +123,8 @@ def table_style(table_sheet, row_start, row_end, column_count,
             if i >= column_count:
                 break
             if formatting:
-                if 'Дата' in table_sheet.cell(row=row_start, column=i + 1).value:
+                if 'Дата' in table_sheet.cell(row=row_start,
+                                              column=i + 1).value:
                     cell.number_format = DATA_FORMAT
                 else:
                     cell.number_format = NUMBER_FORMAT
@@ -151,3 +160,83 @@ def table_report_style(table_sheet, row_start, row_end, column_count,
                 if row < row_start + 2:
                     cell.font = Font(color='FF0000')
                 cell.fill = REST_FILL
+
+
+def margin_res(sheet, row, table, writer,
+               is_city=False, city=None, short_city=None):
+    if is_city:
+        row += 1
+        res = ((1, f'ИТОГО {short_city}'),
+               (2, sum(table[table['Город'] == city]['Себестоимость'])),
+               (3, sum(table[table['Город'] == city]['Выручка'])),
+               (4, sum(table[table['Город'] == city]['Валовая прибыль'])),
+               (5, sum(table[table['Город'] == city]['Выплачено'])))
+        add_result(sheet, row, *res)
+        result_style(sheet[row], table.shape[1] - 1, last_res=True)
+
+        row += 1
+        diff = sum(table[table['Город'] == city]['Себестоимость']) - \
+               sum(table[table['Город'] == city]['Выплачено'])
+        if sum(table[table['Город'] == city]['Выручка']) == 0:
+            percentage = 0
+        else:
+            percentage = sum(table[table['Город'] == city]['Валовая прибыль']) / \
+                         sum(table[table['Город'] == city]['Выручка'])
+        res = ((1, f'ИТОГО - ВЫДАНО {short_city}'),
+               (2, diff),
+               (4, percentage))
+        add_result(sheet, row, *res)
+        result_style(sheet[row], table.shape[1] - 1, last_res=True)
+        sheet.cell(row=row,
+                   column=4).value = f'{sheet.cell(row=row, column=4).value * 100:.1f}%'
+    else:
+        columns_write = ['Заказчик', 'Себестоимость', 'Выручка',
+                         'Валовая прибыль', 'Выплачено']
+        res = ((1, 'ИТОГО'),
+               (2, sum(table['Себестоимость'])),
+               (3, sum(table['Выручка'])),
+               (4, sum(table['Валовая прибыль'])),
+               (5, sum(table['Выплачено'])))
+        row = table_record(writer, sheet, table[columns_write], res, row=row,
+                           is_auto_dimension=True)
+
+    return row
+
+
+def gross_record(table, sheet, file_name, work_book, is_month=False):
+    row = 1
+    sheet.cell(row=row, column=1).value = f'ВАЛОВАЯ ПРИБЫЛЬ'
+    if is_month:
+        sheet.cell(row=row, column=1).value += f'. {MONTHS[MONTH]}'
+    sheet.cell(row=row, column=1).font = FONT_TITLE
+    row += 1
+    sheet.cell(row=row, column=1).value = f'Дата формирования отчета: '
+    sheet.cell(row=row, column=2).value = f'{today:%d.%m.%Y}'
+    row += 1
+    if not is_month:
+        sheet.cell(row=row, column=1).value = f'Отчетные даты: '
+        sheet.cell(row=row,
+                   column=2).value = f'{START_LAST_WEEK:%d.%m.%Y} - ' \
+                                     f'{END_LAST_WEEK:%d.%m.%Y}'
+        row += 1
+
+    for i, _ in enumerate(sheet):
+        sheet.cell(row=i + 1, column=1).alignment = Alignment(horizontal='left')
+
+    with pd.ExcelWriter(file_name, engine='openpyxl', mode='a',
+                        datetime_format='DD/MM') as writer:
+        writer.book = work_book
+        writer.sheets = dict((ws.title, ws) for ws in work_book.worksheets)
+
+        row = margin_res(sheet, row, table, writer)
+
+        row += 1
+        city = 'Тюмень'
+        row = margin_res(sheet, row, table, writer, is_city=True, city=city,
+                         short_city='ТМН')
+
+        city = 'Екатеринбург'
+        row = margin_res(sheet, row, table, writer, is_city=True, city=city,
+                         short_city='ЕКБ')
+
+    return row
