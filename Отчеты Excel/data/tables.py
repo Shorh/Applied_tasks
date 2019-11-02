@@ -1,5 +1,7 @@
 import pandas as pd
+
 from data.connection import connect
+from data.constants import MONTH_START
 
 
 class AmberTables:
@@ -77,7 +79,12 @@ class AmberTables:
         return pd.read_sql(self.__sql('BalanceType'), self.connect_db)
 
     def get_shift(self):
-        shift = pd.read_sql(self.__sql('Shift'), self.connect_db)
+        sql = f'''
+            SELECT * 
+            FROM {self.base}.[Shift] as shift
+            WHERE FORMAT(shift.Date, 'MM') >= {MONTH_START};
+            '''
+        shift = pd.read_sql(sql, self.connect_db)
 
         shift['IsShiftPaid'].fillna(False, inplace=True)
         shift['FineOrBonus'].fillna(0, inplace=True)
@@ -103,3 +110,9 @@ class AmberTables:
 
     def get_appointed_staff(self):
         return pd.read_sql(self.__sql('AppointedStaff'), self.connect_db)
+
+
+if __name__ == '__main__':
+    pd.options.display.max_columns = 100
+    tables = AmberTables(data_folder=True)
+    print(tables.get_shift().head())
