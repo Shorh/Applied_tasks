@@ -13,9 +13,9 @@ DATA_FORMAT = 'mm-dd-yy'
 
 today = pd.Timestamp.today()
 TODAY = pd.Timestamp(year=today.year, month=today.month, day=today.day)
-START_LAST_WEEK = TODAY + pd.Timedelta(days=-TODAY.weekday(), weeks=-1)
-END_LAST_WEEK = START_LAST_WEEK + pd.Timedelta(days=6)
-LAST_DAY_FOR_THE_FINE = START_LAST_WEEK + pd.Timedelta(days=11)
+START_LAST_WEEK = TODAY + pd.Timedelta(days=-TODAY.weekday(), weeks=-2)
+END_LAST_WEEK = START_LAST_WEEK + pd.Timedelta(days=13)
+LAST_DAY_FOR_THE_FINE = START_LAST_WEEK + pd.Timedelta(days=18)
 
 MONTH_START = START_LAST_WEEK.month
 MONTH_END = END_LAST_WEEK.month
