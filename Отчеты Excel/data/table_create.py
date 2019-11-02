@@ -214,6 +214,7 @@ class ReportTables(AmberTables):
 
         salary_done = salary[col_shift][
             (salary['Type'] != 126) &
+            (salary['ResultOfShift_total'] != 0) &
             (salary['IsShiftPaid'] == False) &
             (salary['Date'] <= constants.END_LAST_WEEK)]
         salary_done = salary_done.groupby(
@@ -232,6 +233,7 @@ class ReportTables(AmberTables):
 
         salary_record = salary[col_shift][
             (salary['Type'] == 126) &
+            (salary['ResultOfShift_total'] != 0) &
             (salary['Date'] <= constants.END_LAST_WEEK)]
         salary_record = salary_record.groupby(group_by).agg(
             'sum').reset_index()
@@ -322,6 +324,7 @@ class ReportTables(AmberTables):
 
         salary_done_detail = salary[col_done][
             (salary['Type'] != 126) &
+            (salary['ResultOfShift_total'] != 0) &
             (salary['IsShiftPaid'] == False) &
             (salary['Date'] <= constants.END_LAST_WEEK)]
         salary_done_detail['WhoPaidMoney'] = [
@@ -358,17 +361,11 @@ class ReportTables(AmberTables):
         табелей по объектам
         :return:
         """
-        merge = ['Id', 'FIO']
-        shift_for_report = self.shift_detail.merge(
-            self.full_questionarys[merge], left_on='Questionary',
-            right_on='Id', how='left', validate='m:1')
-
         drop = ['FineOrBonus', 'ResultOfShift', 'IsShiftPaid', 'PaymentDate',
-                'IsComeToWork', 'InnerRate_x', 'InstanceDate',
-                'WhoPaidMoney', 'FineReason', 'Id', 'Questionary',
-                'ObjectPartner', 'InnerRate_y', 'Specialty', 'PriceForHour',
-                'InnerRate_total']
-        shift_for_report.drop(drop, axis=1, inplace=True)
+                'IsComeToWork', 'InstanceDate',
+                'WhoPaidMoney', 'FineReason', 'Questionary',
+                'ObjectPartner', 'InnerRate', 'Specialty', 'PriceForHour']
+        shift_for_report = self.shift_detail.drop(drop, axis=1)
 
         shift_for_report.sort_values(by=['FIO'], inplace=True)
         shift_for_report = shift_for_report[
@@ -380,6 +377,19 @@ class ReportTables(AmberTables):
 
         return {'shift_for_report': shift_for_report,
                 'done_for_report': done_for_report}
+
+    def get_table_of_objects(self, city):
+        shift_for_report_unique = self.shift_detail[
+            (self.shift_detail['City'] == city) &
+            ((self.shift_detail['month'] == constants.MONTH_START) |
+             (self.shift_detail['month'] == constants.MONTH_END))]
+
+        group_by = ['Partner', 'PartnerName', 'ObjectId', 'ObjectName',
+                    'ObjectAddress']
+        shift_for_report_unique = shift_for_report_unique[
+            group_by].drop_duplicates().reset_index()
+
+        return shift_for_report_unique
 
     @staticmethod
     def get_month_report(df, month, year):
@@ -409,10 +419,14 @@ class ReportTables(AmberTables):
         columns = ['ВСЕГО'] + list(df_obj.columns)[:-1]
         df_obj = df_obj[columns]
 
+        for index in df_obj.index:
+            if df_obj.loc[index, 'ВСЕГО'] == 0:
+                df_obj.drop([index], inplace=True)
+
         return df_obj
 
 
 if __name__ == '__main__':
     pd.options.display.max_columns = 100
     report = ReportTables(data_folder=True)
-    print(report.get_salary_table('Екатеринбург')[2].head())
+    print(report.get_tables_for_report()['shift_for_report'].head())
