@@ -166,20 +166,19 @@ def write_month_report(table_shift, table_done, obj_id, month,
                                    is_formatting=True,
                                    is_result_style=[True, True])
 
-    margin = table_shift[table_shift['ObjectId'] == obj_id][['Date', 'Price_total']].groupby(['Date']).agg('sum').reset_index()
-    done = table_done[table_done['ObjectId'] == obj_id][['Date', 'ResultOfShift_total']].groupby(['Date']).agg('sum').reset_index()
-    res_margin = [(1, 'ИТОГО ВЫРУЧКА'), (2, sum(margin['Price_total']))]
+    margin = table_shift[table_shift['ObjectId'] == obj_id][['Date', 'month', 'Price_total']].groupby(['Date', 'month']).agg('sum').reset_index()
+    done = table_done[table_done['ObjectId'] == obj_id][['Date', 'month', 'ResultOfShift_total']].groupby(['Date', 'month']).agg('sum').reset_index()
+
+    res_margin = [(1, 'ИТОГО ВЫРУЧКА'), (2, sum(margin[margin['month'] == month]['Price_total']))]
     res_done = [(1, 'ВЫПЛАЧЕНО ЗАКАЗЧИКОМ'),
-                (2, sum(done['ResultOfShift_total']))]
+                (2, sum(done[done['month'] == month]['ResultOfShift_total']))]
     for i, date in enumerate(month_report_obj.columns[1:]):
         if date in list(margin['Date']):
-            res_margin += [(i + 3, margin[margin['Date'] == date][
-                'Price_total'].values[0])]
+            res_margin += [(i + 3, margin[margin['Date'] == date]['Price_total'].values[0])]
         else:
             res_margin += [(i + 3, 0)]
         if date in list(done['Date']):
-            res_done += [(i + 3, done[done['Date'] == date][
-                'ResultOfShift_total'].values[0])]
+            res_done += [(i + 3, done[done['Date'] == date]['ResultOfShift_total'].values[0])]
         else:
             res_done += [(i + 3, 0)]
 
