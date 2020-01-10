@@ -102,7 +102,7 @@ class WriteTable:
         elif type_table == 3:
             self.row = 1
             self.sheet.cell(row=self.row, column=1).value = f'ВАЛОВАЯ ПРИБЫЛЬ'
-            if 'month' in kwargs:
+            if 'month' in kwargs and kwargs['month'] is not None:
                 self.sheet.cell(row=self.row, column=1).value += \
                     f'. {constants.MONTHS[kwargs["month"]]}'
             self.sheet.cell(row=self.row, column=1).font = constants.FONT_TITLE
@@ -112,7 +112,7 @@ class WriteTable:
             self.sheet.cell(row=self.row, column=2).value = f'{constants.TODAY:%d.%m.%Y}'
 
             self.row += 1
-            if 'month' not in kwargs:
+            if 'month' not in kwargs or kwargs['month'] is None:
                 self.sheet.cell(row=self.row, column=1).value = f'Отчетные даты: '
                 self.sheet.cell(row=self.row, column=2).value = \
                     f'{constants.START_LAST_WEEK:%d.%m.%Y} - ' \
