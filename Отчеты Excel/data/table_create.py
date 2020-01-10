@@ -425,8 +425,49 @@ class ReportTables(AmberTables):
 
         return df_obj
 
+    def get_margin(self, is_month=False):
+        """
+        Создание таблицы валовой прибыли либо за последние две недели, либо по месяцам
+        :param is_month: таблица по месяцам или за две последние недели?
+        :return:
+        """
+        group_by = ['PartnerName', 'Partner', 'City']
+        if is_month:
+            group_by += ['month']
+
+        column = group_by + ['ResultOfShift_total', 'Price', 'Margin',
+                             'Vydanonalichnymi']
+
+        margin_table = self.shift_detail[self.shift_detail['Type'] == 126]
+
+        if is_month:
+            margin_table = margin_table[column]
+        else:
+            margin_table = \
+                margin_table[(margin_table['Date'] >= constants.START_LAST_WEEK) &
+                             (margin_table['Date'] <= constants.END_LAST_WEEK)][column]
+
+        margin_table = margin_table.groupby(group_by).agg('sum').reset_index()
+
+        drop = ['Partner']
+        margin_table.drop(drop, axis=1, inplace=True)
+
+        margin_table.sort_values(by=['Margin'], ascending=False, inplace=True)
+        margin_table = margin_table.rename(
+            columns={'PartnerName': 'Заказчик',
+                     'ResultOfShift_total': 'Себестоимость',
+                     'Price': 'Выручка', 'Margin': 'Валовая прибыль',
+                     'Vydanonalichnymi': 'Выплачено', 'City': 'Город'})
+
+        column = ['Город', 'Заказчик', 'Себестоимость', 'Выручка',
+                  'Валовая прибыль', 'Выплачено']
+        if is_month:
+            column += ['month']
+
+        return margin_table[column]
+
 
 if __name__ == '__main__':
     pd.options.display.max_columns = 100
     report = ReportTables(data_folder=True)
-    print(report.get_tables_for_report()['shift_for_report'].head())
+    print(report.get_margin().head())
