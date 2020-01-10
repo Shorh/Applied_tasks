@@ -1,7 +1,7 @@
 import pandas as pd
 
 from data.connection import connect
-from data.constants import MONTH_START
+from data.constants import MONTH_START, MONTH_END, YEAR_START, YEAR_END
 
 
 class AmberTables:
@@ -82,7 +82,10 @@ class AmberTables:
         sql = f'''
             SELECT * 
             FROM {self.base}.[Shift] as shift
-            WHERE FORMAT(shift.Date, 'MM') >= {MONTH_START};
+            WHERE (FORMAT(shift.Date, 'MM') = {MONTH_START} AND 
+            FORMAT(shift.Date, 'yyyy') = {YEAR_START}) OR 
+            (FORMAT(shift.Date, 'MM') = {MONTH_END} AND 
+            FORMAT(shift.Date, 'yyyy') = {YEAR_END});
             '''
         shift = pd.read_sql(sql, self.connect_db)
 
